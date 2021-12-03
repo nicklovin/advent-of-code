@@ -18,7 +18,6 @@ def get_final_positions():
     depth = 0
     distance = 0
     dive_movements = get_movement_data()
-    print(dive_movements)
 
     for movement in dive_movements:
         movement_type, delta = movement.split(' ')
@@ -32,9 +31,31 @@ def get_final_positions():
     return distance, depth
 
 
+def get_final_positions_with_aim():
+    aim = 0
+    depth = 0
+    distance = 0
+    dive_movements = get_movement_data()
+
+    for movement in dive_movements:
+        movement_type, delta = movement.split(' ')
+        if movement_type == 'up':
+            aim -= int(delta)
+        elif movement_type == 'down':
+            aim += int(delta)
+        elif movement_type == 'forward':
+            depth += (aim * int(delta))
+            distance += int(delta)
+
+    return distance, depth
+
+
 def main():
     x, y = get_final_positions()
-    return x * y
+    final_position = x * y
+    aim_x, aim_y = get_final_positions_with_aim()
+    final_position_with_aim = aim_x * aim_y
+    return final_position, final_position_with_aim
 
 
 if __name__ == '__main__':
