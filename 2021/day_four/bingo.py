@@ -1,12 +1,9 @@
 import re
 import os
-from collections import Counter
 
 cwd = os.getcwd()
 bingo_cards_file = '%s/puzzle_inputs/bingo_cards.txt' % os.path.dirname(cwd)
 bingo_inputs_file = '%s/puzzle_inputs/bingo_inputs.txt' % os.path.dirname(cwd)
-# bingo_cards_file = r'C:\Users\Nick Love\AppData\Roaming\JetBrains\PyCharmCE2021.1\scratches\scratch_1.txt'
-# bingo_inputs_file = r'C:\Users\Nick Love\AppData\Roaming\JetBrains\PyCharmCE2021.1\scratches\scratch_2.txt'
 
 BINGO_ROW_PATTERN = r'(?P<row>\s*\d+\s+\d+\s+\d+\s+\d+\s+\d+)'
 
@@ -63,11 +60,6 @@ class BingoCard(object):
     def set_number_checked(self, number, check_state=True):
         index = self.all_points.index(number)
         self.all_points[index].set_checked(check_state)
-        # Debug lines
-        # if check_state:
-        #     print('{} set to checked!'.format(number))
-        # else:
-        #     print('{} set to unchecked!'.format(number))
 
     def set_rows(self, inputs):
         for row in inputs:
@@ -167,13 +159,10 @@ def get_bingo_card_data():
 
 
 def get_bingo_input_data():
-    bingo_inputs = []
     with open(bingo_inputs_file) as f:
         input_numbers = f.readline()
         input_number = input_numbers.split(',')
-        print(input_number[-1])
         input_number[-1].replace('\n', '')
-        bingo_inputs = input_number
 
     return input_number
 
@@ -183,9 +172,7 @@ def find_first_winner():
     cards = get_bingo_card_data()
 
     # Many of these variables may be excess from earlier stream of consciousness, cleanup needed
-    cross_type = ''
     winning_card = None
-    winning_line = None
     bingo_found = False
     winners = []
     total_rounds = 0
@@ -197,9 +184,7 @@ def find_first_winner():
             has_bingo, bingo_type, type_index = card.check_for_bingo()
             if has_bingo:
                 bingo_found = True
-                cross_type = bingo_type
                 winning_card = card
-                winning_line = type_index
                 winner_str = 'Card {0}: {1} {2}'.format(i, bingo_type, type_index)
                 winners.append(winner_str)
         total_rounds += 1
@@ -207,24 +192,50 @@ def find_first_winner():
             last_number = int(number)
             break
 
-    win_msg = 'The following cards found bingo in {} rounds:\n'.format(total_rounds)
+    win_msg = 'The following card(s) found bingo in {} rounds:\n'.format(total_rounds)
     win_msg += '\t{}'.format(','.join(winners))
     print(win_msg)
     # For prompt question, will fail on multiple winners for other methods
-    return winning_card, cross_type, winning_line, last_number
+    return winning_card, last_number
 
 
-def calculate_winning_score(card, cross_type, type_index, last_number):
-    if cross_type.lower() == 'row':
-        line = card.get_row(type_index)
-    elif cross_type.lower() == 'column':
-        line = card.get_col(type_index)
-    else:
-        raise KeyError('Invalid cross_type! {}'.format(cross_type))
+def find_last_winner():
+    inputs = get_bingo_input_data()
+    cards = get_bingo_card_data()
 
+    total_rounds = 0
+    winning_card = None
+    last_number = None
+    card_dump = cards.copy()
+    for number in inputs:
+        for i, card in cards.items():
+            if not card_dump.get(i):
+                continue
+            if card.has_number(number):
+                card.set_number_checked(number, True)
+            has_bingo, bingo_type, type_index = card.check_for_bingo()
+            if has_bingo:
+                if len(card_dump) == 1:
+                    winner_str = 'Card {0}: {1} {2}'.format(i, bingo_type, type_index)
+                    winning_card = card_dump.pop(i)
+                    last_number = int(number)
+                    break
+                else:
+                    card_dump.pop(i)
+        total_rounds += 1
+        if len(card_dump) == 0:
+            break
+
+    win_msg = 'The final card found bingo in {} rounds:\n'.format(total_rounds)
+    win_msg += '\t{}'.format(winner_str)
+    print(win_msg)
+
+    return winning_card, last_number
+
+
+def calculate_final_score(card, last_number):
     unmarked_sum = 0
     unmarked_numbers = card.get_all_unmarked()
-    print(unmarked_numbers)
     for number in unmarked_numbers:
         unmarked_sum += int(number)
 
@@ -232,8 +243,10 @@ def calculate_winning_score(card, cross_type, type_index, last_number):
 
 
 def main():
-    card, cross_type, type_index, last_number = find_first_winner()
-    print(calculate_winning_score(card, cross_type, type_index, last_number))
+    card, last_number = find_first_winner()
+    print(calculate_final_score(card, last_number))
+    card, last_number = find_last_winner()
+    print(calculate_final_score(card, last_number))
 
 
 if __name__ == '__main__':
