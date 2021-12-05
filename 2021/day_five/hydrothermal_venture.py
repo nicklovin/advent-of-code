@@ -3,10 +3,8 @@ import re
 
 cwd = os.getcwd()
 measurement_data_file = '%s/puzzle_inputs/hydrothermal_vent_positions.txt' % os.path.dirname(cwd)
-# measurement_data_file = r'C:\Users\Nick Love\AppData\Roaming\JetBrains\PyCharmCE2021.1\scratches\scratch_3.txt'
 
-
-VENT_PATTERN = '(?P<x1>\d+),(?P<y1>\d+)\s+->\s+(?P<x2>\d+),(?P<y2>\d+)'
+VENT_PATTERN = r'(?P<x1>\d+),(?P<y1>\d+)\s+->\s+(?P<x2>\d+),(?P<y2>\d+)'
 
 
 class VentLine(object):
@@ -24,21 +22,44 @@ class VentLine(object):
     def is_straight(self):
         return self.x1 == self.x2 or self.y1 == self.y2
 
+    def is_diagonal(self):
+        # Only considers 45 degree angles
+        return abs(self.x1 - self.x2) == abs(self.y1 - self.y2)
+
     def _write_points(self):
-        if not self.is_straight():
+        if not self.is_straight() and not self.is_diagonal():
             return []  # Not Implemented, currently not needed
         if self.x1 == self.x2:
-            # x = self.x1
             upper = self.y1 if self.y1 > self.y2 else self.y2
             lower = self.y1 if self.y1 < self.y2 else self.y2
             y = [(self.x1, point) for point in range(lower, upper+1)]
             return y
-        if self.y1 == self.y2:
-            # y = self.y1
+        elif self.y1 == self.y2:
             upper = self.x1 if self.x1 > self.x2 else self.x2
             lower = self.x1 if self.x1 < self.x2 else self.x2
             x = [(point, self.y1) for point in range(lower, upper+1)]
             return x
+        else:
+            delta_x = self.x1 - self.x2
+            delta_y = self.y1 - self.y2
+
+            points_x = []
+            points_y = []
+
+            if delta_x > 0:
+                for i in range(delta_x+1):
+                    points_x.append(self.x1-i)
+            else:
+                for i in range(abs(delta_x)+1):
+                    points_x.append(self.x1+i)
+            if delta_y > 0:
+                for i in range(delta_y+1):
+                    points_y.append(self.y1-i)
+            else:
+                for i in range(abs(delta_y)+1):
+                    points_y.append(self.y1+i)
+
+            return [(x, y) for x, y in zip(points_x, points_y)]
 
     def get_points(self):
         return self._points
